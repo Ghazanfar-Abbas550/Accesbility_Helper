@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Accessibility Helper — Simplify Teacher Notes</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="site-header" role="banner">
+    <div class="wrap">
+      <h1>Accessibility Helper</h1>
+      <p class="tagline">Easily simplify teacher notes into clear, easy-to-read language.</p>
+    </div>
+  </header>
+
+  <main class="wrap" role="main">
+    <form class="upload-form" method="post" enctype="multipart/form-data" aria-label="Upload notes form">
+      <div class="form-row">
+        <label for="file" class="file-label">Upload Notes (.txt)</label>
+
+        <div class="file-input-wrapper" aria-hidden="false">
+          <!-- Keep the native input for form submission and accessibility, but hide it visually -->
+          <input
+            type="file"
+            id="file"
+            name="file"
+            accept=".txt"
+            required
+            aria-required="true"
+            class="file-input"
+          />
+
+          <!-- Visible custom button that triggers the hidden file input -->
+          <button
+            type="button"
+            id="file-btn"
+            class="btn file-btn"
+            aria-controls="file"
+            aria-label="Choose notes file"
+          >
+            Choose file
+          </button>
+
+          <!-- Display the selected filename -->
+          <span id="file-name" class="file-name">No file selected</span>
+        </div>
+
+        <button class="btn primary" type="submit">Simplify</button>
+      </div>
+      <p class="hint">Tip: Upload plain .txt files. The simplified text will appear alongside the original.</p>
+    </form>
+
+    {% if original_text %}
+    <section class="results" aria-live="polite">
+      <div class="column">
+        <h2>Original Notes</h2>
+        <pre id="original" class="text-box">{{ original_text|e }}</pre>
+      </div>
+
+      <div class="column">
+        <div class="results-header">
+          <h2>Simplified Notes</h2>
+          <div class="controls">
+            <button id="copy-btn" class="btn small" type="button" aria-label="Copy simplified notes">Copy</button>
+          </div>
+        </div>
+        <pre id="simplified" class="text-box">{{ simplified|e }}</pre>
+      </div>
+    </section>
+    {% endif %}
+  </main>
+
+  <footer class="site-footer" role="contentinfo">
+    <div class="wrap">
+      <small>Built for accessibility — clear, readable notes for all learners.</small>
+    </div>
+  </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // Copy button behavior (unchanged)
+      const copyBtn = document.getElementById('copy-btn');
+      if (copyBtn) {
+        copyBtn.addEventListener('click', function () {
+          const simplified = document.getElementById('simplified');
+          const text = simplified ? simplified.innerText : '';
+          if (!navigator.clipboard) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+              document.execCommand('copy');
+              copyBtn.textContent = 'Copied!';
+              setTimeout(() => (copyBtn.textContent = 'Copy'), 2000);
+            } catch (e) {
+              alert('Copy failed. Please select and copy manually.');
+            }
+            document.body.removeChild(textarea);
+            return;
+          }
+          navigator.clipboard.writeText(text).then(() => {
+            copyBtn.textContent = 'Copied!';
+            setTimeout(() => (copyBtn.textContent = 'Copy'), 2000);
+          }).catch(() => {
+            alert('Copy failed. Please select and copy manually.');
+          });
+        });
+      }
+
+      // Custom file picker behavior
+      const fileInput = document.getElementById('file');
+      const fileBtn = document.getElementById('file-btn');
+      const fileName = document.getElementById('file-name');
+
+      // Open file dialog when custom button is clicked
+      if (fileBtn && fileInput) {
+        fileBtn.addEventListener('click', function () {
+          fileInput.click();
+        });
+
+        // Support keyboard activation (Enter and Space)
+        fileBtn.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            fileInput.click();
+          }
+        });
+
+        // Update visible filename when a file is chosen
+        fileInput.addEventListener('change', function () {
+          const f = fileInput.files && fileInput.files[0];
+          fileName.textContent = f ? f.name : 'No file selected';
+        });
+
+        // If page loaded with a preselected file (rare), show it
+        if (fileInput.files && fileInput.files[0]) {
+          fileName.textContent = fileInput.files[0].name;
+        }
+      }
+    });
+  </script>
+</body>
+</html>
